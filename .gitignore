@@ -1,0 +1,10 @@
+### Python ###
+*.pyc
+
+# Linux and Windows
+*~
+.Trash-*
+
+venv/
+*.sublime-workspace
+*.sublime-project
