@@ -1,6 +1,6 @@
 # Spoonbill for Pelican
 
-Spoonbill is web front-end editor for [Pelican][0] and other static site generators, heavily inspired by [Shoebill][1].  
+Spoonbill a is web front-end editor for [Pelican][0] and other static site generators, heavily inspired by [Shoebill][1].  
 It uses [SimpleMDE][4] as a simple JS markdown editor and [Bottle][2] as a lightweight WSGI web-framework.
 
 ![Spoonbill screenshot](docs/screenshots/screenshot-1.png?raw=true)
