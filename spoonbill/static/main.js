@@ -4,6 +4,11 @@
     var simplemde = new SimpleMDE({ 
         element: document.getElementById('textarea'),
         spellChecker: false,
+        autosave: {
+            enabled: true,
+            uniqueId: document.getElementById('file_name').value,
+            delay: 10000
+        },
     });
 
     // Toggle menu for small viewports

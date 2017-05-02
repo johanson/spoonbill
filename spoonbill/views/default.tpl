@@ -29,7 +29,7 @@
     <h2>{{file_name}}</h2>
     <form method="post" action="{{site_url}}/save/" accept-charset="utf-8">
         <textarea id="textarea" name="file_contents">{{file_contents}}</textarea>
-        <input type="hidden" name="file_name" id="file_name" value="{{file_name}}">
+        <input type="hidden" name="file_name" id="file_name" value="{{file_name or 'index'}}">
         <input type="submit" name="save" value="Save">
         <input type="submit" name="save_and_build" value="Save & Build">
         <input type="submit" name="delete_file" class="button-clear float-right" id="delete_file" value="Delete File">
