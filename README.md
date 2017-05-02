@@ -25,6 +25,7 @@ Optionally, you can specify:
 ## Features
 
 * Create, edit and delete files.
+* Markdown WYSIWYG-esque editor support.
 * Deploy site.
 * Commit changes with git.
 * Authentication (HTTP basic auth).
