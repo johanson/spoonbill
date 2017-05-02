@@ -6,6 +6,7 @@ import sys
 import argparse
 import subprocess
 import socketserver
+import bottle
 from git import Repo, InvalidGitRepositoryError
 from pathlib import Path
 from bottle import (Bottle, redirect, request,
@@ -13,14 +14,15 @@ from bottle import (Bottle, redirect, request,
 
 app = Bottle()
 log = logging.getLogger('spoonbill')
+root = os.path.abspath(os.path.dirname(__file__))
 
-CONTENT_PATH = '../content'
+CONTENT_PATH = '{0}/{1}'.format(root, '../content')
 FILE_EXTENSION = '.md'  # .md for MarkDown, .rst for reStructuredText etc.
 USERNAME = 'username'
 PASSWORD = 'password'
 PELICAN_DEPLOY = 'pelican content -s publishconf.py -t'
 GIT = False
-GIT_AUTHOR = "Spoonbill <spoonbill@nasa.com>"
+GIT_AUTHOR = 'Spoonbill <spoonbill@nasa.com>'
 
 
 def get_file_list():
@@ -112,7 +114,7 @@ def index():
     data = {'file_name': '',
             'file_contents': '',
             'file_list': get_file_list(),
-            'site_url': "{0}://{1}".format(request.urlparts.scheme,
+            'site_url': '{0}://{1}'.format(request.urlparts.scheme,
                                            request.urlparts.netloc)}
 
     return template('default', data)
@@ -128,7 +130,7 @@ def edit(file_name):
     data = {'file_name': file_name,
             'file_contents': file_contents,
             'file_list': get_file_list(),
-            'site_url': "{0}://{1}".format(request.urlparts.scheme,
+            'site_url': '{0}://{1}'.format(request.urlparts.scheme,
                                            request.urlparts.netloc)}
     return template('default', data)
 
@@ -163,7 +165,7 @@ def save():
 @app.route('/static/<filename>', name='static')
 def server_static(filename):
     """Everything in static directory is accessible."""
-    return static_file(filename, root='./static')
+    return static_file(filename, root='{0}/{1}'.format(root, 'static'))
 
 
 def cli_args():
@@ -189,9 +191,17 @@ def cli_args():
     return parser.parse_args()
 
 
-def init():
-    """Check for Python version and set default settings."""
+def settings():
+    """Check for Python version and set Bottle settings."""
     global CONTENT_PATH
+    CONTENT_PATH = CONTENT_PATH or cli_args().path
+
+    # Give an absolute path for views if Spoonbill
+    # is not executed from working directory.
+    bottle.TEMPLATE_PATH.insert(0, '{0}/{1}'.format(root, 'views'))
+
+    # Allow the server to reuse an address if the program crashes.
+    socketserver.TCPServer.allow_reuse_address = True
 
     if sys.version_info[0] < 3:
         log.critical("Python 3 or newer in necessary.")
@@ -202,9 +212,11 @@ def init():
         log.warning("Debugging is enabled but should be " +
                     "switched off for public applications.")
 
-    CONTENT_PATH = CONTENT_PATH or cli_args().path
+
+def main():
+    """Start Bottle."""
+    settings()
     if CONTENT_PATH:
-        socketserver.TCPServer.allow_reuse_address = True
         app.run(host=cli_args().host,
                 port=cli_args().port,
                 debug=cli_args().debug,
@@ -212,7 +224,5 @@ def init():
     else:
         log.critical("Please specify the path of the content.")
 
-
 if __name__ == '__main__':
-
-    init()
+    main()
