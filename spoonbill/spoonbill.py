@@ -5,6 +5,7 @@ import os
 import sys
 import argparse
 import subprocess
+import socketserver
 from git import Repo, InvalidGitRepositoryError
 from pathlib import Path
 from bottle import (Bottle, redirect, request,
@@ -202,8 +203,8 @@ def init():
                     "switched off for public applications.")
 
     CONTENT_PATH = CONTENT_PATH or cli_args().path
-
     if CONTENT_PATH:
+        socketserver.TCPServer.allow_reuse_address = True
         app.run(host=cli_args().host,
                 port=cli_args().port,
                 debug=cli_args().debug,
