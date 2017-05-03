@@ -2,7 +2,7 @@
 
     // Init simplemde
     var simplemde = new SimpleMDE({ 
-        element: document.getElementById('textarea'),
+        element: document.getElementById('content'),
         spellChecker: false,
         autosave: {
             enabled: false,
@@ -23,7 +23,7 @@
     var new_file = document.getElementById('new_file')
     new_file.onclick = function(e) {
         e.preventDefault();
-        var new_file_name = prompt("Enter the file name", "my-file.md");
+        var new_file_name = prompt("Enter the file name", "lorem-ipsum.md");
         if (new_file_name != null) {
             window.location.href = "/edit/" + new_file_name;
         }

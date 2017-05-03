@@ -25,7 +25,7 @@ GIT = False
 GIT_AUTHOR = 'Spoonbill <spoonbill@nasa.com>'
 
 
-def get_file_list():
+def list_documents():
     """Get the list of files in the content directory."""
     try:
         file_list = []
@@ -35,14 +35,14 @@ def get_file_list():
                     if file.endswith(FILE_EXTENSION):
                         tag = os.path.relpath(root, CONTENT_PATH).lstrip('.')
                         if tag:
-                            tag = tag + '/'
+                            tag = '{0}{1}'.format(tag, '/')
                         file_list.append(tag + file)
         return file_list
     except Exception as error:
         log.error(error)
 
 
-def open_file(file_name):
+def open_document(file_name):
     """Open file for editing."""
     try:
         file_name = file_name.strip().lstrip('/')
@@ -53,7 +53,7 @@ def open_file(file_name):
             file_contents = fo.read()
             fo.close()
             log.info("Opening existing file %s.", file_name)
-            return file_contents
+            return read_document(file_contents)
         else:
             log.info("File %s does not exist.", file_name)
             return False
@@ -61,12 +61,21 @@ def open_file(file_name):
         log.error(error)
 
 
-def save_file(file_name, file_contents):
+def read_document(doc):
+    """Parse document, extract meta data and content."""
+    document = doc.split('\n\n', 1)
+    metadata = document[0]
+    content = document[1].lstrip()
+    return metadata, content
+
+
+def save_document(file_name, file_metadata, file_contents):
     """Save the contents to file. If file does not exist, create it."""
     try:
+        content = '{0}\n\n{1}'.format(file_metadata, file_contents)
         fo = open(os.path.join(CONTENT_PATH, file_name), 'w',
                   newline='\n', encoding='utf8')
-        fo.write(file_contents)
+        fo.write(content)
         fo.close()
         log.info("File %s saved.", file_name)
         commit_changes(file_name)
@@ -74,7 +83,7 @@ def save_file(file_name, file_contents):
         log.error(error)
 
 
-def delete_file(file_name):
+def delete_document(file_name):
     """Delete the requested file."""
     try:
         file_name = file_name.strip().lstrip('/')
@@ -86,6 +95,15 @@ def delete_file(file_name):
             log.info("File %s does not exist.", file_name)
     except Exception as error:
         log.error(error)
+
+
+def default_document():
+    """Boilerplate for the new markdown file."""
+    metadata = ("title: Lorem Ipsum\n"
+                "slug: lorem-ipsum\n"
+                "date: 1939-09-01 11:00\n")
+    content = "Lorem Ipsum"
+    return metadata, content
 
 
 def commit_changes(filename):
@@ -111,9 +129,11 @@ def credentials(user, pswd):
 @auth_basic(credentials)
 def index():
     """Index/home route."""
-    data = {'file_name': '',
-            'file_contents': '',
-            'file_list': get_file_list(),
+    document = default_document()
+    data = {'file_name': '{0}{1}'.format('lorem-ipsum', FILE_EXTENSION),
+            'metadata': document[0],
+            'content': document[1],
+            'document_list': list_documents(),
             'site_url': '{0}://{1}'.format(request.urlparts.scheme,
                                            request.urlparts.netloc)}
 
@@ -124,12 +144,13 @@ def index():
 @auth_basic(credentials)
 def edit(file_name):
     """Editing route."""
-    file_contents = open_file(file_name)
-    if not file_contents:
-        file_contents = 'Hello World!'
+    document = open_document(file_name)
+    if not document:
+        document = default_document()
     data = {'file_name': file_name,
-            'file_contents': file_contents,
-            'file_list': get_file_list(),
+            'metadata': document[0],
+            'content': document[1],
+            'document_list': list_documents(),
             'site_url': '{0}://{1}'.format(request.urlparts.scheme,
                                            request.urlparts.netloc)}
     return template('default', data)
@@ -139,7 +160,7 @@ def edit(file_name):
 @auth_basic(credentials)
 def delete(file_name):
     """Editing route."""
-    delete_file(file_name)
+    delete_document(file_name)
     redirect('/')
 
 
@@ -148,18 +169,19 @@ def delete(file_name):
 def save():
     """Save the file contents and redirect."""
     file_name = request.forms.decode().get('file_name')
-    file_contents = request.forms.decode().get('file_contents')
+    metadata = request.forms.decode().get('metadata')
+    content = request.forms.decode().get('content')
     if request.forms.get('save'):
-        save_file(file_name, file_contents)
-        redirect('/edit/' + file_name)
+        save_document(file_name, metadata, content)
+        redirect('/{0}/{1}'.format('edit', file_name))
     if request.forms.get('save_and_build'):
-        save_file(file_name, file_contents)
+        save_document(file_name, metadata, content)
         if PELICAN_DEPLOY:
             log.info("Deploying Pelican.")
             # Subprocess is non-blocking and will run in the background.
             subprocess.Popen(PELICAN_DEPLOY,
                              shell=True, stderr=subprocess.STDOUT)
-        redirect('/edit/' + file_name)
+        redirect('/{0}/{1}'.format('edit', file_name))
 
 
 @app.route('/static/<filename>', name='static')

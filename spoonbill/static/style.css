@@ -72,7 +72,15 @@
     padding: 20px;
 }
 
-#textarea {
+#metadata {
+    display: block;
+    width: 100%;
+    min-height: 5em;
+    border: 1px solid #d1d1d1;
+    border-radius: 0;
+}
+
+#content {
     display: block;
     width: 100%;
     min-height: 500px;
