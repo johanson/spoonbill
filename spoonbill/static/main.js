@@ -5,7 +5,7 @@
         element: document.getElementById('textarea'),
         spellChecker: false,
         autosave: {
-            enabled: true,
+            enabled: false,
             uniqueId: document.getElementById('file_name').value,
             delay: 10000
         },
