@@ -7,6 +7,7 @@ import argparse
 import subprocess
 import socketserver
 import bottle
+import config as cfg
 from git import Repo, InvalidGitRepositoryError
 from pathlib import Path
 from bottle import (Bottle, redirect, request,
@@ -17,7 +18,7 @@ log = logging.getLogger('spoonbill')
 root = os.path.abspath(os.path.dirname(__file__))
 
 CONTENT_PATH = '{0}/{1}'.format(root, '../content')
-FILE_EXTENSION = '.md'  # .md for MarkDown, .rst for reStructuredText etc.
+FILE_EXTENSION = '.md'
 USERNAME = 'username'
 PASSWORD = 'password'
 PELICAN_DEPLOY = 'pelican content -s publishconf.py -t'
@@ -26,7 +27,11 @@ GIT_AUTHOR = 'Spoonbill <spoonbill@nasa.com>'
 
 
 def list_documents():
-    """Get the list of files in the content directory."""
+    """Get the list of files in the content directory.
+
+    Returns:
+        list: The list of files in CONTENT_PATH directory.
+    """
     try:
         file_list = []
         for root, dirs, files in os.walk(CONTENT_PATH):
@@ -43,7 +48,11 @@ def list_documents():
 
 
 def open_document(file_name):
-    """Open file for editing."""
+    """Try to open the file and read it.
+
+    Returns:
+        string: The content of the file.
+    """
     try:
         file_name = file_name.strip().lstrip('/')
         file_path = Path(os.path.join(CONTENT_PATH, file_name))
@@ -56,13 +65,20 @@ def open_document(file_name):
             return read_document(file_contents)
         else:
             log.info("File %s does not exist.", file_name)
-            return False
     except Exception as error:
         log.error(error)
 
 
-def read_document(doc):
-    """Parse document, extract meta data and content."""
+def read_document(document):
+    """Split document to content and metadata.
+
+    Args:
+        document (string): The content of the document.
+
+    Returns:
+        metadata (string)
+        content (string)
+    """
     document = doc.split('\n\n', 1)
     metadata = document[0]
     content = document[1].lstrip()
@@ -112,17 +128,16 @@ def commit_changes(filename):
         try:
             repository = Repo(CONTENT_PATH)
             repository.git.add(CONTENT_PATH + filename)
-            repository.git.commit(m='Updated ' + filename, author=GIT_AUTHOR)
+            repository.git.commit(m='Updated ' + filename, auth=GIT_AUTHOR)
             log.info("%s committed to git repository.", filename)
         except InvalidGitRepositoryError:
             log.info("%s is not a valid Git repository.", CONTENT_PATH)
 
 
-def credentials(user, pswd):
-    """Check for auth credentials."""
-    if user == USERNAME and pswd == PASSWORD:
-        return True
-    return False
+def credentials(username, password):
+    """Check for auth_basic credentials."""
+    return (username == USERNAME and
+            password == PASSWORD)
 
 
 @app.route('/')
@@ -145,8 +160,7 @@ def index():
 def edit(file_name):
     """Editing route."""
     document = open_document(file_name)
-    if not document:
-        document = default_document()
+    document = default_document() if not document else document
     data = {'file_name': file_name,
             'metadata': document[0],
             'content': document[1],
